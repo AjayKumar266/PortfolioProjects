@@ -1,13 +1,7 @@
 -- SQL Project - Data Cleaning
 
-
-
-
-
 SELECT * 
 FROM world_layoffs.layoffs;
-
-
 
 -- We want a table with the raw data in case something happens
 CREATE TABLE world_layoffs.layoffs_staging 
@@ -16,20 +10,15 @@ LIKE world_layoffs.layoffs;
 INSERT layoffs_staging 
 SELECT * FROM world_layoffs.layoffs;
 
-
 -- follow these steps to clean data
 -- 1. Look for duplicates and remove them
 -- 2. standardize data
 -- 3. Look at null values
 -- 4. remove any columns and rows that are not necessary
 
-
-
 -- 1. Remove Duplicates
 
-# First let's check for duplicates
-
-
+-- First let's check for duplicates
 
 SELECT *
 FROM world_layoffs.layoffs_staging
@@ -56,12 +45,14 @@ WHERE
 	row_num > 1;
     
 -- let's just look at oda to confirm
+
 SELECT *
 FROM world_layoffs.layoffs_staging
 WHERE company = 'Oda'
 ;
 
 -- these are our real duplicates 
+
 SELECT *
 FROM (
 	SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
@@ -75,6 +66,7 @@ WHERE
 	row_num > 1;
 
 -- now you may want to write it like this:
+
 WITH DELETE_CTE AS 
 (
 SELECT *
@@ -160,17 +152,13 @@ DELETE FROM world_layoffs.layoffs_staging2
 WHERE row_num >= 2;
 
 
-
-
-
-
-
 -- 2. Standardize Data
 
 SELECT * 
 FROM world_layoffs.layoffs_staging2;
 
 -- if we look at industry it looks like we have some null and empty rows, let's take a look at these
+
 SELECT DISTINCT industry
 FROM world_layoffs.layoffs_staging2
 ORDER BY industry;
@@ -182,10 +170,13 @@ OR industry = ''
 ORDER BY industry;
 
 -- let's take a look at these
+
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE company LIKE 'Bally%';
 -- nothing wrong here
+
+
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE company LIKE 'airbnb%';
@@ -196,6 +187,7 @@ WHERE company LIKE 'airbnb%';
 -- makes it easy so if there were thousands we wouldn't have to manually check them all
 
 -- we should set the blanks to nulls since those are typically easier to work with
+
 UPDATE world_layoffs.layoffs_staging2
 SET industry = NULL
 WHERE industry = '';
@@ -218,15 +210,15 @@ WHERE t1.industry IS NULL
 AND t2.industry IS NOT NULL;
 
 -- and if we check it looks like Bally's was the only one without a populated row to populate this null values
+
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE industry IS NULL 
 OR industry = ''
 ORDER BY industry;
 
--- ---------------------------------------------------
-
 -- I also noticed the Crypto has multiple different variations. We need to standardize that - let's say all to Crypto
+
 SELECT DISTINCT industry
 FROM world_layoffs.layoffs_staging2
 ORDER BY industry;
@@ -236,17 +228,18 @@ SET industry = 'Crypto'
 WHERE industry IN ('Crypto Currency', 'CryptoCurrency');
 
 -- now that's taken care of:
+
 SELECT DISTINCT industry
 FROM world_layoffs.layoffs_staging2
 ORDER BY industry;
 
--- --------------------------------------------------
 -- we also need to look at 
 
 SELECT *
 FROM world_layoffs.layoffs_staging2;
 
 -- everything looks good except apparently we have some "United States" and some "United States." with a period at the end. Let's standardize this.
+
 SELECT DISTINCT country
 FROM world_layoffs.layoffs_staging2
 ORDER BY country;
@@ -255,20 +248,24 @@ UPDATE layoffs_staging2
 SET country = TRIM(TRAILING '.' FROM country);
 
 -- now if we run this again it is fixed
+
 SELECT DISTINCT country
 FROM world_layoffs.layoffs_staging2
 ORDER BY country;
 
 
 -- Let's also fix the date columns:
+
 SELECT *
 FROM world_layoffs.layoffs_staging2;
 
 -- we can use str to date to update this field
+
 UPDATE layoffs_staging2
 SET `date` = STR_TO_DATE(`date`, '%m/%d/%Y');
 
 -- now we can convert the data type properly
+
 ALTER TABLE layoffs_staging2
 MODIFY COLUMN `date` DATE;
 
@@ -277,17 +274,12 @@ SELECT *
 FROM world_layoffs.layoffs_staging2;
 
 
-
-
-
 -- 3. Look at Null Values
 
 -- the null values in total_laid_off, percentage_laid_off, and funds_raised_millions all look normal. I don't think I want to change that
 -- I like having them null because it makes it easier for calculations during the EDA phase
 
 -- so there isn't anything I want to change with the null values
-
-
 
 
 -- 4. remove any columns and rows we need to
@@ -303,6 +295,7 @@ WHERE total_laid_off IS NULL
 AND percentage_laid_off IS NULL;
 
 -- Delete Useless data we can't really use
+
 DELETE FROM world_layoffs.layoffs_staging2
 WHERE total_laid_off IS NULL
 AND percentage_laid_off IS NULL;
@@ -316,37 +309,5 @@ DROP COLUMN row_num;
 
 SELECT * 
 FROM world_layoffs.layoffs_staging2;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
